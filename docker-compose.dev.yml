@@ -1,0 +1,21 @@
+version: '3.7'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./deps.edn:/home/appuser/deps.edn:ro
+      - ./project.clj:/home/appuser/project.clj:ro
+      - ./Makefile:/home/appuser/Makefile:ro
+      - ./src:/home/appuser/src:ro
+      - ./test:/home/appuser/test:ro
+      - m2:/home/appuser/.m2
+    # env_file: .env
+    ports:
+      - "9988:9988/tcp"
+    restart: unless-stopped
+
+volumes:
+  m2:
