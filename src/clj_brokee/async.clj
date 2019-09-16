@@ -54,7 +54,9 @@
         p1 (b/producer mb)
         c1 (b/consumer mb :t1 1)]
     (future
-      (println "CONSUMED" (b/consume c1)))
+      (let [msg (b/consume c1)]
+        (println "CONSUMED" msg)
+        (b/commit c1 msg)))
     (Thread/sleep 1000)
-    (b/produce p1 :t1 {:x "t1 m1"})
+    (b/produce p1 :t1 {:x "t1 m1" :y (rand-int 1000)})
     (Thread/sleep 1000)))
