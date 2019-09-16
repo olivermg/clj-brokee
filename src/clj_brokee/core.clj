@@ -1,15 +1,17 @@
-(ns clj-brokee.core
-  (:require [clojure.core.async :as a]))
+(ns clj-brokee.core)
 
 (defprotocol MessageBroker
-  (get-producer [this topic])
-  (subscribe [this topic group-id]))
+  (producer [this])
+  (consumer [this topic group-id]))
 
-(defn foo
-  "I don't do a whole lot."
-  [x]
-  (println x "Hello, World!"))
+(defprotocol Producer
+  (produce* [this topic message]))
 
-(defn -main [& args]
-  (println "aaaaaaaaaaa")
-  (foo 123))
+(defprotocol Consumer
+  (consume [this])
+  (commit [this message]))
+
+
+(defn produce [this topic message]
+  (produce* this topic message)
+  nil)
