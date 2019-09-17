@@ -1,8 +1,10 @@
-(ns clj-brokee.core)
+(ns clj-brokee.core
+  (:require [clojure.core.async :as a]))
 
-(defprotocol MessageBroker
-  (producer [this])
-  (consumer [this topic group-id]))
+(defprotocol Broker
+  (producer-channel [this])
+  (consumer-channel [this topic group-id])
+  (commit-channel [this]))
 
 (defprotocol Producer
   (produce* [this topic message]))
@@ -11,7 +13,16 @@
   (consume [this])
   (commit [this message]))
 
+(defprotocol RawConsumer
+  (consume [this]))
+
 
 (defn produce [this topic message]
   (produce* this topic message)
   nil)
+
+
+
+(defprotocol Adapter
+  (recv-ch [this ch])
+  (send-ch [this ch]))

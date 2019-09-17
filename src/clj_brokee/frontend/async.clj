@@ -1,4 +1,4 @@
-(ns clj-brokee.async
+(ns clj-brokee.frontend.async
   (:require [clojure.core.async :as a]
             [clj-brokee.core :as b]))
 
@@ -47,6 +47,12 @@
         pub (a/pub ch ::topic)]
     (map->CoreAsyncMessageBroker {:mix mix
                                   :pub pub})))
+
+
+
+(defn adapter [ch]
+  ch)
+
 
 
 (comment
