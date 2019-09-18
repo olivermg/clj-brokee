@@ -61,7 +61,9 @@
   (rx-ch [this]))
 
 
-(defrecord Backbone [mix mult]
+(defrecord Backbone [xf
+                     mix mult]
+  ;;; TODO: use xf
   Receiver
   (tx-ch [this]
     (let [ch (a/chan)]
@@ -80,8 +82,8 @@
     (a/tap mult (tx-ch other)))
   this)
 
-(defn construct [this]
-  (map->Backbone {}))
+(defn construct [this & {:keys [xf]}]  ;; xf could be filtering events by permissions etc.
+  (map->Backbone {:xf xf}))
 
 (defn start [this]
   (let [ch   (a/chan)
@@ -93,20 +95,22 @@
 
 
 (defrecord WebsocketAdapter []
+  ;;; will internally:
+  ;;;  - dispatch to correct client via user-id-fn
   Sender
   (tx-ch [this])
   Receiver
   (rx-ch [this]))
 
 (defrecord ReFrameAdapter []
-  Sender
-  (tx-ch [this])
+  ;;; probably can't be a Sender, as we can't subscribe to all re-frame topics to forward them
   Receiver
   (rx-ch [this]))
 
 
 (defrecord Client [backbone
                    backbone-tx-ch backbone-rx-ch])
+
 (defn client-foo [{:keys [backbone-tx-ch backbone-rx-ch] :as this} x]
   (a/put! backbone-tx-ch {:x x})
   (a/<!! backbone-rx-ch))
