@@ -124,6 +124,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;;; user/client stuff:
+
 (defprotocol Producer
   (produce [this message]))
 
@@ -131,7 +133,17 @@
   (consume [this])
   (commit [this message]))
 
-(defprotocol Adapter
+(defprotocol ClientBroker
+  (producer [this])
+  (consumer [this topic]))
+
+;;; backend/hub stuff:
+
+(defprotocol BackendBroker
+  (rx-ch [this])
+  (tx-ch [this]))
+
+(defprotocol HubAdapter
   (rx-ch [this])
   (tx-ch [this]))
 
