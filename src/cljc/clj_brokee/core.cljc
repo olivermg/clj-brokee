@@ -143,10 +143,6 @@
   (rx-ch [this])
   (tx-ch [this]))
 
-(defprotocol HubAdapter
-  (rx-ch [this])
-  (tx-ch [this]))
-
 (defrecord Hub [])
 (defn connect [this adapter]
   (let [rx (rx-ch adapter)
