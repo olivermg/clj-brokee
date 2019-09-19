@@ -63,11 +63,12 @@
   (recv [this])
   (commit [this message]))
 
-(defrecord Bridge [adapter rx-ch tx-ch])
-(defn construct [adapter rx-ch tx-ch]
-  (map->Bridge {:adapter adapter
-                :rx-ch   rx-ch
-                :tx-ch   tx-ch}))
+(defrecord Bridge [adapter rx-ch tx-ch commit-ch])
+(defn construct [adapter rx-ch tx-ch commit-ch]
+  (map->Bridge {:adapter   adapter
+                :rx-ch     rx-ch
+                :tx-ch     tx-ch
+                :commit-ch commit-ch}))
 (defn start [this]
   (a/go-loop [msg (a/<! rx-ch)]
     (when-not (nil? msg)
@@ -77,6 +78,10 @@
     (when-not (nil? msg)
       (a/>!! tx-ch msg)
       (recur (recv adapter))))
+  (a/go-loop [msg (a/<! commit-ch)]
+    (when-not (nil? msg)
+      (commit adapter msg)
+      (recur (a/<! commit-ch))))
   this)
 (defn stop [this]
   this)
@@ -113,3 +118,25 @@
   (defn client-foo [{:keys [backbone-tx-ch backbone-rx-ch] :as this} x]
     (a/put! backbone-tx-ch {:x x})
     (a/<!! backbone-rx-ch)))
+
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defprotocol Producer
+  (produce [this message]))
+
+(defprotocol Consumer
+  (consume [this])
+  (commit [this message]))
+
+(defprotocol Adapter
+  (rx-ch [this])
+  (tx-ch [this]))
+
+(defrecord Hub [])
+(defn connect [this adapter]
+  (let [rx (rx-ch adapter)
+        tx (tx-ch adapter)]
+    ))
