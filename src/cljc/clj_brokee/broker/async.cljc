@@ -6,8 +6,8 @@
             #?@(:clj  [[clojure.core.async :refer [go go-loop] :as a]]
                 :cljs [[cljs.core.async :as a]])))
 
-(defrecord AsyncBroker [incoming-ch outgoing-ch incoming-mix outgoing-mult
-                        mix mult]
+(defrecord AsyncBroker [topic-fn
+                        ch mix pub]
 
   c/ClientBroker
 
@@ -16,9 +16,9 @@
       (a/admix mix ch)
       (pa/map->AsyncProducer {:ch ch})))
 
-  (consumer [{:keys [mult] :as this} topic]
+  (consumer [{:keys [pub] :as this} topic]
     (let [ch (a/chan)]
-      (a/tap mult ch)
+      (a/sub pub topic ch)
       (pa/map->AsyncConsumer {:ch ch})))
   
   c/BackendBroker
@@ -27,13 +27,13 @@
   
   (tx-ch [this]))
 
-(defn construct [incoming-ch outgoing-ch]
-  (map->AsyncBroker {:incoming-ch incoming-ch
-                     :outgoing-ch outgoing-ch}))
+(defn construct [topic-fn]
+  (map->AsyncBroker {:topic-fn topic-fn}))
 
-(defn start [{:keys [incoming-ch outgoing-ch] :as this}]
-  (let [mix  (a/mix outgoing-ch)
-        mult (a/mult incoming-ch)]
+(defn start [{:keys [topic-fn] :as this}]
+  (let [ch  (a/chan)
+        mix (a/mix ch)
+        pub (a/pub ch topic-fn)]
     (assoc this
-           :mix  mix
-           :mult mult)))
+           :mix mix
+           :pub pub)))
