@@ -7,7 +7,7 @@
                 :cljs [[cljs.core.async :as a]])))
 
 (defrecord AsyncBroker [topic-fn
-                        ch mix pub]
+                        client-mix cbch backend-mult bbch backend-mix bcch client-pub]
 
   c/ClientBroker
 
@@ -31,9 +31,20 @@
   (map->AsyncBroker {:topic-fn topic-fn}))
 
 (defn start [{:keys [topic-fn] :as this}]
-  (let [ch  (a/chan)
-        mix (a/mix ch)
-        pub (a/pub ch topic-fn)]
+  (let [cbch         (a/chan)
+        bbch         (a/chan)
+        bcch         (a/chan)
+        client-mix   (a/mix cbch)
+        backend-mult (a/mult cbch)
+        backend-mix  (a/mix bcch)
+        client-pub   (a/pub bcch topic-fn)]
+    (a/tap backend-mult bbch)
+    (a/admix backend-mix bbch)
     (assoc this
-           :mix mix
-           :pub pub)))
+           :client-mix   client-mix
+           :cbch         cbch
+           :backend-mult backend-mult
+           :bbch         bbch
+           :backend-mix  backend-mix
+           :bcch         bcch
+           :client-pub   client-pub)))
