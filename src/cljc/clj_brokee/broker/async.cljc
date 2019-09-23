@@ -6,26 +6,59 @@
             #?@(:clj  [[clojure.core.async :refer [go go-loop] :as a]]
                 :cljs [[cljs.core.async :as a]])))
 
+
+;;;                 backends                     backends
+;;;                 ^      ^                     +     +
+;;;                 |      |                     |     |
+;;;                 |      |                     |     |
+;;;                 |      |                     v     v
+;;;             +---+------+---+             +---+-----+---+
+;;;             |              |             |             |
+;;;       +---->+ backend-mult +------------>+ backend-mix +----+
+;;;       |     |              |    bbch     |             |    |
+;;;       |     +--------------+             +-------------+    |
+;;;       |                                                     |
+;;;       |                                                     |bcch
+;;;       |cbch                                                 |
+;;;       |                                                     |
+;;;       |                                                     v
+;;; +-----+------+                                      +-------+----+
+;;; |            |                                      |            |
+;;; | client-mix |                                      | client-pub |
+;;; |            |                                      |            |
+;;; +-+----+---+-+                                      +--+---+---+-+
+;;;   ^    ^   ^                                           |   |   |
+;;;   |    |   |                                           |   |   |
+;;;   +    +   +                                           v   v   v
+;;;    producers                                           consumers
+
+
 (defrecord AsyncBroker [topic-fn
                         client-mix cbch backend-mult bbch backend-mix bcch client-pub]
 
   c/ClientBroker
 
-  (producer [{:keys [mix] :as this}]
+  (producer [{:keys [client-mix] :as this}]
     (let [ch (a/chan)]
-      (a/admix mix ch)
+      (a/admix client-mix ch)
       (pa/map->AsyncProducer {:ch ch})))
 
-  (consumer [{:keys [pub] :as this} topic]
+  (consumer [{:keys [client-pub] :as this} topic]
     (let [ch (a/chan)]
-      (a/sub pub topic ch)
-      (pa/map->AsyncConsumer {:ch ch})))
-  
+      (a/sub client-pub topic ch)
+      (ca/map->AsyncConsumer {:ch ch})))
+
   c/BackendBroker
-  
-  (rx-ch [this])
-  
-  (tx-ch [this]))
+
+  (tx-ch [{:keys [backend-mix] :as this}]
+    (let [ch (a/chan)]
+      (a/admix backend-mix ch)
+      ch))
+
+  (rx-ch [{:keys [backend-mult] :as this}]
+    (let [ch (a/chan)]
+      (a/mult backend-mult ch)
+      ch)))
 
 (defn construct [topic-fn]
   (map->AsyncBroker {:topic-fn topic-fn}))
@@ -48,3 +81,16 @@
            :backend-mix  backend-mix
            :bcch         bcch
            :client-pub   client-pub)))
+
+(defn stop [{:keys [cbch bbch bcch] :as this}]
+  (a/close! cbch)
+  (a/close! bbch)
+  (a/close! bcch)
+  (assoc this
+         :client-mix   nil
+         :cbch         nil
+         :backend-mult nil
+         :bbch         nil
+         :backend-mix  nil
+         :bcch         nil
+         :client-pub   nil))
