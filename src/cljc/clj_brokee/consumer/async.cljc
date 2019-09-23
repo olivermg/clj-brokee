@@ -12,5 +12,5 @@
     (a/<!! msg-ch))
 
   (commit [this message]
-          #_(a/>!! commit-ch message)  ;; is probably not safe enough, as success here only means commit msg has been delivered, not that commit was successful
-          ))
+    #_(a/>!! commit-ch message)  ;; is probably not safe enough, as success here only means commit msg has been delivered, not that commit was successful
+    (throw (ex-info "not implemented" {}))))
