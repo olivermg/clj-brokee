@@ -46,7 +46,7 @@
   (consumer [{:keys [client-pub] :as this} topic]
     (let [ch (a/chan)]
       (a/sub client-pub topic ch)
-      (ca/map->AsyncConsumer {:ch ch})))
+      (ca/map->AsyncConsumer {:msg-ch ch})))
 
   c/BackendBroker
 
@@ -57,7 +57,7 @@
 
   (rx-ch [{:keys [backend-mult] :as this}]
     (let [ch (a/chan)]
-      (a/mult backend-mult ch)
+      (a/tap backend-mult ch)
       ch)))
 
 (defn construct [topic-fn]
