@@ -145,8 +145,33 @@
   (tx-ch [this])
   (rx-ch [this]))
 
-(defrecord Hub [])
-(defn connect [this adapter]
-  (let [rx (rx-ch adapter)
-        tx (tx-ch adapter)]
-    ))
+(defrecord Hub [mix ch mult])
+(defn construct []
+  (map->Hub {}))
+(defn start [this]
+  (let [ch (a/chan)]
+    (assoc this
+           :ch   ch
+           :mix  (a/mix ch)
+           :mult (a/mult ch))))
+(defn stop [{:keys [ch] :as this}]
+  (a/close! ch)
+  (assoc this
+         :ch   nil
+         :mix  nil
+         :mult nil))
+(defn connect [{:keys [mix mult] :as this} backend-broker]
+  (let [broker-id (hash backend-broker)
+        rx        (rx-ch backend-broker)
+        rx-xf     #(map {::broker-id broker-id
+                         ::payload %})
+        rx-marker (a/chan 1 rx-xf)
+        tx        (tx-ch backend-broker)
+        tx-xf     (comp (remove #(= (::broker-id %) broker-id))
+                        (map ::payload))
+        tx-filter (a/chan 1 tx-xf)]
+    (a/pipe rx rx-marker)
+    (a/pipe tx tx-filter)
+    (a/admix mix rx-marker)
+    (a/tap mult tx-filter)
+    true))
