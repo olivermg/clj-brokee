@@ -34,7 +34,7 @@
 
 (defn start [this]
   (let [{:keys [ch-recv send-fn] :as ws-data} (ws/make-channel-socket!
-                                               #?(:clj  (:http-adapter-fn this)
+                                               #?(:clj  ((:http-adapter-fn this))
                                                   :cljs (:route-path this))
                                                #?(:clj  {:user-id-fn (fn [req]
                                                                        (println "USER-ID-FN" req)
