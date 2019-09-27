@@ -163,8 +163,9 @@
 (defn connect [{:keys [mix mult] :as this} backend-broker]
   (let [broker-id (hash backend-broker)
         rx        (rx-ch backend-broker)
-        rx-xf     #(map {::broker-id broker-id
-                         ::payload %})
+        rx-xf     (map (fn [msg]
+                         {::broker-id broker-id
+                          ::payload   msg}))
         rx-marker (a/chan 1 rx-xf)
         tx        (tx-ch backend-broker)
         tx-xf     (comp (remove #(= (::broker-id %) broker-id))
