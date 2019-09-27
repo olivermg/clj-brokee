@@ -5,4 +5,4 @@
   
   c/Producer
   
-  (send [this message]))
+  (produce [this message]))
