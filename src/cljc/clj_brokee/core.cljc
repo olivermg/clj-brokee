@@ -174,4 +174,4 @@
     (a/pipe tx tx-filter)
     (a/admix mix rx-marker)
     (a/tap mult tx-filter)
-    true))
+    this))
