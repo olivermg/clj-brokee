@@ -6,4 +6,5 @@
   :dependencies [[org.clojure/clojure "1.10.1"]
                  [org.clojure/core.async "0.4.500"]
                  [com.taoensso/sente "1.13.1"]]
+  :source-paths ["src/clj" "src/cljc"]
   :repl-options {:init-ns clj-brokee.core})
