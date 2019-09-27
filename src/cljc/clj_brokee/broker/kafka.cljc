@@ -3,7 +3,7 @@
 
 (defrecord KafkaBroker []
 
-  c/Broker
+  c/ClientBroker
 
   (producer [this])
 
