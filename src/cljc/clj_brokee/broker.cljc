@@ -1,20 +1,20 @@
-(ns clj-brokee.broker.async
+(ns clj-brokee.broker
   #?(:cljs (:require-macros [cljs.core.async.macros :refer [go go-loop]]))
-  (:require [clj-brokee.core :as c]
-            [clj-brokee.producer.async :as pa]
-            [clj-brokee.consumer.async :as ca]
+  (:require [clj-brokee.bridge :as b]
+            [clj-brokee.producer :as p]
+            [clj-brokee.consumer :as c]
             #?@(:clj  [[clojure.core.async :refer [go go-loop] :as a]]
                 :cljs [[cljs.core.async :as a]])))
 
 
-;;;                 backends                     backends
+;;;                 bridges                      bridges
 ;;;                 ^      ^                     +     +
 ;;;                 |      |                     |     |
 ;;;                 |      |                     |     |
 ;;;                 |      |                     v     v
 ;;;             +---+------+---+             +---+-----+---+
 ;;;             |              |             |             |
-;;;       +---->+ backend-mult +------------>+ backend-mix +----+
+;;;       +---->+  bridge-mult +------------>+  bridge-mix +----+
 ;;;       |     |              |    bbch     |             |    |
 ;;;       |     +--------------+             +-------------+    |
 ;;;       |                                                     |
@@ -33,52 +33,40 @@
 ;;;    producers                                           consumers
 
 
-(defrecord AsyncBroker [topic-fn
-                        client-mix cbch backend-mult bbch backend-mix bcch client-pub]
+(defrecord Broker [topic-fn
+                   client-mix cbch bridge-mult bbch bridge-mix bcch client-pub]
 
-  c/ClientBroker
+  b/Bridge
 
-  (producer [{:keys [client-mix] :as this}]
+  (tx-ch [{:keys [bridge-mix] :as this}]
     (let [ch (a/chan)]
-      (a/admix client-mix ch)
-      (pa/map->AsyncProducer {:ch ch})))
-
-  (consumer [{:keys [client-pub] :as this} topic]
-    (let [ch (a/chan)]
-      (a/sub client-pub topic ch)
-      (ca/map->AsyncConsumer {:msg-ch ch})))
-
-  c/BackendBroker
-
-  (tx-ch [{:keys [backend-mix] :as this}]
-    (let [ch (a/chan)]
-      (a/admix backend-mix ch)
+      (a/admix bridge-mix ch)
       ch))
 
-  (rx-ch [{:keys [backend-mult] :as this}]
+  (rx-ch [{:keys [bridge-mult] :as this}]
     (let [ch (a/chan)]
-      (a/tap backend-mult ch)
+      (a/tap bridge-mult ch)
       ch)))
 
 (defn construct [topic-fn]
-  (map->AsyncBroker {:topic-fn topic-fn}))
+  (map->Broker {:topic-fn topic-fn}))
 
 (defn start [{:keys [topic-fn] :as this}]
   (let [cbch         (a/chan)
         bbch         (a/chan)
         bcch         (a/chan)
         client-mix   (a/mix cbch)
-        backend-mult (a/mult cbch)
-        backend-mix  (a/mix bcch)
+        bridge-mult  (a/mult cbch)
+        bridge-mix   (a/mix bcch)
         client-pub   (a/pub bcch topic-fn)]
-    (a/tap backend-mult bbch)
-    (a/admix backend-mix bbch)
+    (a/tap bridge-mult bbch)
+    (a/admix bridge-mix bbch)
     (assoc this
            :client-mix   client-mix
            :cbch         cbch
-           :backend-mult backend-mult
+           :bridge-mult  bridge-mult
            :bbch         bbch
-           :backend-mix  backend-mix
+           :bridge-mix   bridge-mix
            :bcch         bcch
            :client-pub   client-pub)))
 
@@ -89,8 +77,18 @@
   (assoc this
          :client-mix   nil
          :cbch         nil
-         :backend-mult nil
+         :bridge-mult  nil
          :bbch         nil
-         :backend-mix  nil
+         :bridge-mix   nil
          :bcch         nil
          :client-pub   nil))
+
+(defn producer [{:keys [client-mix] :as this}]
+  (let [ch (a/chan)]
+    (a/admix client-mix ch)
+    (p/map->Producer {:ch ch})))
+
+(defn consumer [{:keys [client-pub] :as this} topic]
+  (let [ch (a/chan)]
+    (a/sub client-pub topic ch)
+    (c/map->Consumer {:msg-ch ch})))

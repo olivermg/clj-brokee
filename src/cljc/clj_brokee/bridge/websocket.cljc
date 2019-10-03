@@ -1,18 +1,18 @@
-(ns clj-brokee.broker.websocket
+(ns clj-brokee.bridge.websocket
   #?(:cljs (:require-macros [cljs.core.async.macros :refer [go-loop]]))
-  (:require [clj-brokee.core :as c]
+  (:require [clj-brokee.bridge :as b]
             [taoensso.sente :as ws]
             #?@(:clj  [[clojure.core.async :refer [go-loop] :as a]
                        #_[taoensso.sente.server-adapters.http-kit :as wsh]]
                 :cljs [[cljs.core.async :as a]])))
 
 
-(defrecord WebsocketBroker #?(:cljs [route-path
+(defrecord WebsocketBridge #?(:cljs [route-path
                                      mix mult ws-data]
                               :clj  [http-adapter-fn
                                      mix mult ws-data])
-  
-  c/BackendBroker
+
+  b/Bridge
 
   (tx-ch [{:keys [mix] :as this}]
     (let [ch (a/chan)]
@@ -26,10 +26,10 @@
 
 
 #?(:cljs (defn construct [route-path]
-           (map->WebsocketBroker {:route-path route-path}))
+           (map->WebsocketBridge {:route-path route-path}))
 
    :clj  (defn construct [http-adapter-fn]
-           (map->WebsocketBroker {:http-adapter-fn http-adapter-fn})))
+           (map->WebsocketBridge {:http-adapter-fn http-adapter-fn})))
 
 
 (defn start [this]
