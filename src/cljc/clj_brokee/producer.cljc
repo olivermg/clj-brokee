@@ -5,5 +5,7 @@
 
 (defrecord Producer [ch])
 
-(defn produce [{:keys [ch] :as this} message]
-  (a/>!! ch message))
+(defn produce [{:keys [ch] :as this} topic message]
+  ;;; TODO: how to make this blocking in cljs?
+  (a/put! ch (assoc message
+                    :clj-brokee/topic topic)))

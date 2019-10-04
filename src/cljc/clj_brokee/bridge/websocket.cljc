@@ -40,17 +40,25 @@
                                                                        (println "USER-ID-FN" req)
                                                                        :555-shoe)}
                                                   :cljs {:type :auto}))
-        tx-ch (a/chan)]
-    (go-loop [msg (a/<! tx-ch)]
+        tx (a/chan)
+        rx (a/chan)]
+    (go-loop [msg (a/<! tx)]
       (when-not (nil? msg)
+        #_(println "WS TX" msg)
         ;;; TODO: send sane user-id on server-side:
-        #?(:clj  (send-fn :555-shoe [:event/x {:msg msg}])
-           :cljs (send-fn           [:event/x {:msg msg}]))
-        (recur (a/<! tx-ch))))
+        #?(:clj  (send-fn :555-shoe [:websocket/event {:data msg}])
+           :cljs (send-fn           [:websocket/event {:data msg}]))
+        (recur (a/<! tx))))
+    (go-loop [msg (a/<! ch-recv)]
+      (when-not (nil? msg)
+        #_(println "WS RX" msg)
+        (when-let [data (some-> msg :event second :data)]
+          (a/>! rx data))
+        (recur (a/<! ch-recv))))
     (assoc this
            :ws-data ws-data
-           :mix     (a/mix tx-ch)
-           :mult    (a/mult ch-recv))))
+           :mix     (a/mix tx)
+           :mult    (a/mult rx))))
 
 
 (defn stop [this]
