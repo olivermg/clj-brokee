@@ -6,7 +6,8 @@
 (defrecord Consumer [msg-ch commit-ch])
 
 (defn consume [{:keys [msg-ch] :as this}]
-  (a/<!! msg-ch))
+  (-> (a/<!! msg-ch)
+      (dissoc :clj-brokee/topic)))
 
 (defn commit [this message]
   #_(a/>!! commit-ch message)  ;; is probably not safe enough, as success here only means commit msg has been delivered, not that commit was successful
