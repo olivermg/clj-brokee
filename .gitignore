@@ -11,3 +11,6 @@ profiles.clj
 *.swp
 *~
 /.cpcache
+/.classpath
+/.project
+/.settings
