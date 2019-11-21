@@ -1,11 +1,12 @@
 FROM clojure:tools-deps-alpine
+RUN apk add nodejs
 RUN adduser -D appuser -u 9876 && \
     mkdir -p /home/appuser/.m2 && \
     chown -R appuser /home/appuser
 USER appuser
 WORKDIR /home/appuser
 COPY --chown=appuser . /home/appuser
-EXPOSE 9988
+EXPOSE 9988 9500
 CMD ["clojure", "-R:nrepl", "-m", "nrepl.cmdline", \
     "-b", "0.0.0.0", "-p", "9988", "--middleware", \
-    "[cider.nrepl/cider-middleware]"]
+    "[cider.nrepl/cider-middleware cider.piggieback/wrap-cljs-repl]"]
