@@ -14,3 +14,4 @@ profiles.clj
 /.classpath
 /.project
 /.settings
+/.rebel_readline_history
