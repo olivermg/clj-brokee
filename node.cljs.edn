@@ -1,0 +1,7 @@
+{:main clj-brokee.broker
+ :target :nodejs
+ :optimizations :none
+ :source-map true
+ :pretty-print true
+ ;;; :verbose true
+ }
