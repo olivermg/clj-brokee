@@ -7,6 +7,9 @@ services:
       dockerfile: Dockerfile.dev
     volumes:
       - ./deps.edn:/home/appuser/deps.edn:ro
+      - ./figwheel-main.edn:/home/appuser/figwheel-main.edn:ro
+      - ./browser.cljs.edn:/home/appuser/browser.cljs.edn:ro
+      - ./node.cljs.edn:/home/appuser/node.cljs.edn:ro
       - ./project.clj:/home/appuser/project.clj:ro
       - ./Makefile:/home/appuser/Makefile:ro
       - ./src:/home/appuser/src:ro
@@ -15,6 +18,7 @@ services:
     # env_file: .env
     ports:
       - "9988:9988/tcp"
+      - "9500:9500/tcp"
     restart: unless-stopped
 
 volumes:
