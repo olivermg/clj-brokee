@@ -1,6 +1,16 @@
 nrepl:
 	clj -R:nrepl -m nrepl.cmdline
 
+repl-clj:
+	# clj -A:clj-repl --repl   # enable this as soon as bug in clj is fixed
+	clj --repl
+
+repl-cljs-node:
+	clojure -A:cljs-repl -m figwheel.main --build node --repl
+
+repl-cljs-browser:
+	clojure -A:cljs-repl -m figwheel.main --build browser --repl
+
 
 pom:
 	clj -Spom
