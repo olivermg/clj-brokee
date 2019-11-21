@@ -57,7 +57,7 @@
         client-mix   (a/mix cbch)
         bridge-mult  (a/mult cbch)
         bridge-mix   (a/mix bcch)
-        client-pub   (a/pub bcch :clj-brokee/topic)]
+        client-pub   (a/pub bcch :topic)]
     (a/tap bridge-mult bbch)
     (a/admix bridge-mix bbch)
     (assoc this
