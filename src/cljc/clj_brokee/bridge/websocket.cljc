@@ -9,7 +9,7 @@
 
 (defrecord WebsocketBridge #?(:cljs [route-path
                                      mix mult ws-data]
-                              :clj  [http-adapter-fn
+                              :clj  [http-adapter-fn user-id-fn http-request-user-id-fn
                                      mix mult ws-data])
 
   b/Bridge
@@ -28,26 +28,30 @@
 #?(:cljs (defn construct [route-path]
            (map->WebsocketBridge {:route-path route-path}))
 
-   :clj  (defn construct [http-adapter-fn]
-           (map->WebsocketBridge {:http-adapter-fn http-adapter-fn})))
+   :clj  (defn construct [http-adapter-fn user-id-fn http-request-user-id-fn]
+           (map->WebsocketBridge {:http-adapter-fn         http-adapter-fn
+                                  :user-id-fn              user-id-fn
+                                  :http-request-user-id-fn http-request-user-id-fn})))
 
 
 (defn start [this]
   (let [{:keys [ch-recv send-fn] :as ws-data} (ws/make-channel-socket!
                                                #?(:clj  ((:http-adapter-fn this))
                                                   :cljs (:route-path this))
-                                               #?(:clj  {:user-id-fn (fn [req]
-                                                                       (println "USER-ID-FN" req)
-                                                                       :555-shoe)}
+                                               #?(:clj  {:user-id-fn (:http-request-user-id-fn this)
+                                                         #_(fn [req]
+                                                             (println "USER-ID-FN" req)
+                                                             :555-shoe)}
                                                   :cljs {:type :auto}))
         tx (a/chan)
         rx (a/chan)]
     (go-loop [msg (a/<! tx)]
       (when-not (nil? msg)
         #_(println "WS TX" msg)
-        ;;; TODO: send sane user-id on server-side:
-        #?(:clj  (send-fn :555-shoe [:websocket/event {:data msg}])
-           :cljs (send-fn           [:websocket/event {:data msg}]))
+        #?(:clj  (let [user-id-fn (:user-id-fn this)
+                       user-id    (user-id-fn msg)]
+                   (send-fn user-id [:websocket/event {:data msg}]))
+           :cljs (send-fn [:websocket/event {:data msg}]))
         (recur (a/<! tx))))
     (go-loop [msg (a/<! ch-recv)]
       (when-not (nil? msg)
