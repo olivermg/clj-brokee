@@ -5,9 +5,14 @@
 
 (defrecord Consumer [msg-ch commit-ch])
 
-(defn consume [{:keys [msg-ch] :as this}]
-  (let [{:keys [topic message]} (a/<!! msg-ch)]
-    message))
+(defn consume-async [{:keys [msg-ch] :as this}]
+  (go (let [{:keys [topic message]} (a/<! msg-ch)]
+        message)))
+
+(defn consume [this]
+  (let [cres (consume-async this)]
+    #?(:clj  (a/<!! cres)
+       :cljs cres)))
 
 (defn commit [this message]
   #_(a/>!! commit-ch message)  ;; is probably not safe enough, as success here only means commit msg has been delivered, not that commit was successful

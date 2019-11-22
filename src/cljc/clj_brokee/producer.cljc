@@ -5,7 +5,13 @@
 
 (defrecord Producer [ch])
 
-(defn produce [{:keys [ch] :as this} topic message]
-  ;;; TODO: how to make this blocking in cljs?
-  (a/put! ch {:topic   topic
-              :message message}))
+(defn produce-async [{:keys [ch] :as this} topic message]
+  (go (let [chmsg {:topic   topic
+                   :message message}]
+        (a/>! ch chmsg)
+        nil)))
+
+(defn produce [this topic message]
+  (let [pres (produce-async this topic message)]
+    #?(:clj  (a/<!! pres)
+       :cljs pres)))
