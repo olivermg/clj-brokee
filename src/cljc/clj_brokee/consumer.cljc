@@ -5,6 +5,12 @@
 
 (defrecord Consumer [msg-ch commit-ch])
 
+(defn start [this]
+  this)
+
+(defn stop [this]
+  this)
+
 (defn consume-async [{:keys [msg-ch] :as this}]
   (go (let [{:keys [topic message]} (a/<! msg-ch)]
         message)))

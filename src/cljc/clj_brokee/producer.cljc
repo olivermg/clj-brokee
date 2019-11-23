@@ -5,6 +5,12 @@
 
 (defrecord Producer [ch])
 
+(defn start [this]
+  this)
+
+(defn stop [this]
+  this)
+
 (defn produce-async [{:keys [ch] :as this} topic message]
   (go (let [chmsg {:topic   topic
                    :message message}]
