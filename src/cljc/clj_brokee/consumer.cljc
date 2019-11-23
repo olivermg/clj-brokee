@@ -14,6 +14,17 @@
     #?(:clj  (a/<!! cres)
        :cljs cres)))
 
+(defmacro with-consumed [this msg-sym & body]
+  `(let [_brokee/context {:consumed (consume ~this)}
+         ~msg-sym        (:consumed _brokee/context)]
+     ~@body))
+
+#_(clojure.pprint/pprint
+   (macroexpand-1 '(with-consumed x m
+                     (println m)
+                     m)))
+
+
 (defn commit [this message]
   #_(a/>!! commit-ch message)  ;; is probably not safe enough, as success here only means commit msg has been delivered, not that commit was successful
   #_(throw (ex-info "not implemented" {})))
