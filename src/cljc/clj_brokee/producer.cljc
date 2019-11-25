@@ -1,6 +1,7 @@
 (ns clj-brokee.producer
   #?(:cljs (:require-macros [cljs.core.async.macros :refer [go go-loop]]))
-  (:require #?@(:clj  [[clojure.core.async :refer [go go-loop] :as a]]
+  (:require [clj-brokee.context :refer [*current-context*] :as ctx]
+            #?@(:clj  [[clojure.core.async :refer [go go-loop] :as a]]
                 :cljs [[cljs.core.async :as a]])))
 
 (defrecord Producer [ch])
@@ -12,12 +13,13 @@
   this)
 
 (defn produce-async [{:keys [ch] :as this} topic message]
-  (go (let [chmsg {:topic   topic
-                   :message message}]
+  (go (let [message (with-meta message
+                      *current-context*)
+            chmsg   {:topic   topic
+                     :message message}]
         (a/>! ch chmsg)
         nil)))
 
-(defn produce [this topic message]
-  (let [pres (produce-async this topic message)]
-    #?(:clj  (a/<!! pres)
-       :cljs pres)))
+(defmacro with-produced [this topic message & body]
+  `(go (a/<! (produce-async ~this ~topic ~message))
+       ~@body))
