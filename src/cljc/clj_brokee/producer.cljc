@@ -6,15 +6,17 @@
 
 (defrecord Producer [ch])
 
-(defn produce
+(defmacro produce
   "Produces message under topic. Must be used within the context of a
 go block (either explicitly or e.g. within the body of with-consumed)."
-  [{:keys [ch] :as this} topic message]
-  (let [message (with-meta message
-                  *current-context*)
-        chmsg   {:topic   topic
-                 :message message}]
-    (a/>! ch chmsg)))
+  [this topic message]
+  `(let [message# (with-meta ~message
+                    *current-context*)
+         chmsg#   {:topic   ~topic
+                   :message message#}]
+     (a/>! (:ch ~this) chmsg#)))
+
+#_(macroexpand-1 '(produce {:ch (a/chan)} :topic1 {:foo :bar}))
 
 (defn produce-async
   "Asynchronously produces message under topic."

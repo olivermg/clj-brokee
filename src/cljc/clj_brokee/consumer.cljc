@@ -6,12 +6,14 @@
 
 (defrecord Consumer [msg-ch commit-ch])
 
-(defn consume
+(defmacro consume
   "Consumes message asynchronously. Must be used within the context
 of a go block."
-  [{:keys [msg-ch] :as this}]
-  (let [{:keys [topic message]} (a/<! msg-ch)]
-    message))
+  [this]
+  `(let [ch-msg# (a/<! (:msg-ch ~this))]
+     (:message ch-msg#)))
+
+#_(macroexpand-1 '(consume {:msg-ch (a/chan)}))
 
 (defn consume-async
   "Asynchronously consumes message. Returns a channel that can be
@@ -37,20 +39,19 @@ So a common pattern for responding to a consumed message is:
 assuming that the consumer on the other end is expecting answers to
 be produced under the topic :response-topic."
   [this msg-sym & body]
-  `(go (let [~msg-sym (a/<! (consume ~this))]
+  `(go (let [~msg-sym (consume ~this)]
          (binding [*current-context* (assoc *current-context*
                                             :consumed ~msg-sym)]
            ~@body))))
 
-#_(clojure.pprint/pprint
-   (macroexpand-1 '(with-consumed x m
-                     (println m)
-                     m)))
+#_(macroexpand-1 '(with-consumed this m
+                    (println m)
+                    m))
 
 
-(defn commit
+(defmacro commit
   "Commits a message asynchronously. Must be used within the body
 of with-consumed."
-  [{:keys [commit-ch] :as this} message]
+  [this message]
   ;;; TODO: will probably not be sufficient yet:
-  (a/>! commit-ch message))
+  `(a/>! (:commit-ch ~this) ~message))
