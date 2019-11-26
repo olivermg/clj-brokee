@@ -12,14 +12,23 @@
 (defn stop [this]
   this)
 
-(defn produce-async [{:keys [ch] :as this} topic message]
-  (go (let [message (with-meta message
-                      *current-context*)
-            chmsg   {:topic   topic
-                     :message message}]
-        (a/>! ch chmsg)
-        nil)))
+(defn produce
+  "Produces message under topic. Must be used within the context of a
+go block (either explicitly or e.g. within the body of with-consumed)."
+  [{:keys [ch] :as this} topic message]
+  (let [message (with-meta message
+                  *current-context*)
+        chmsg   {:topic   topic
+                 :message message}]
+    (a/>! ch chmsg)))
 
-(defmacro with-produced [this topic message & body]
-  `(go (a/<! (produce-async ~this ~topic ~message))
+(defn produce-async
+  "Asynchronously produces message under topic."
+  [this topic message]
+  (go (produce this topic message)))
+
+(defmacro with-produced
+  "Evaluates body after producing a message."
+  [this topic message & body]
+  `(go (a/<! (produce ~this ~topic ~message))
        ~@body))
