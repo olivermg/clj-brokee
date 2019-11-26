@@ -6,12 +6,6 @@
 
 (defrecord Producer [ch])
 
-(defn start [this]
-  this)
-
-(defn stop [this]
-  this)
-
 (defn produce
   "Produces message under topic. Must be used within the context of a
 go block (either explicitly or e.g. within the body of with-consumed)."

@@ -6,12 +6,6 @@
 
 (defrecord Consumer [msg-ch commit-ch])
 
-(defn start [this]
-  this)
-
-(defn stop [this]
-  this)
-
 (defn consume
   "Consumes message asynchronously. Must be used within the context
 of a go block."
