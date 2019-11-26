@@ -47,7 +47,7 @@
     (Thread/sleep 1000)
     (b/stop broker)))
 
-#_(deftest via-hub
+(deftest via-hub
   (let [topic    :topic1
         broker1  (-> (b/construct)
                      (b/start))
@@ -61,12 +61,21 @@
         consumer (b/consumer broker2 topic)]
     (testing "send & receive message brokers & hub"
       (future
-        (p/produce producer topic message1)
-        (p/produce producer topic message2))
-      (is (= message1
-             (c/consume consumer)))
-      (is (= message2
-             (c/consume consumer))))
+        (Thread/sleep 100)
+        (go (p/produce producer topic message1)
+            (p/produce producer topic message2)))
+      (is (= {:message message1
+              :context {:consumed message1}}
+             (wait-for-channel
+              (c/with-consumed consumer msg
+                {:message msg
+                 :context ctx/*current-context*}))))
+      (is (= {:message message2
+              :context {:consumed message2}}
+             (wait-for-channel
+              (c/with-consumed consumer msg
+                {:message msg
+                 :context ctx/*current-context*})))))
     (h/stop hub)
     (b/stop broker2)
     (b/stop broker1)))
