@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>clj-brokee</groupId>
   <artifactId>clj-brokee</artifactId>
-  <version>0.1.1-SNAPSHOT</version>
+  <version>0.1.2-SNAPSHOT</version>
   <name>clj-brokee</name>
   <dependencies>
     <dependency>
@@ -14,7 +14,7 @@
     <dependency>
       <groupId>org.clojure</groupId>
       <artifactId>core.async</artifactId>
-      <version>0.4.500</version>
+      <version>0.5.527</version>
     </dependency>
     <dependency>
       <groupId>com.taoensso</groupId>
