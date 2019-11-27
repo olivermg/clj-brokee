@@ -9,7 +9,7 @@
 
 (defrecord WebsocketBridge #?(:cljs [route-path
                                      mix mult ws-data]
-                              :clj  [http-adapter-fn user-id-fn http-request-user-id-fn
+                              :clj  [http-adapter-fn http-request-user-id-fn
                                      mix mult ws-data])
 
   b/Bridge
@@ -28,9 +28,8 @@
 #?(:cljs (defn construct [route-path]
            (map->WebsocketBridge {:route-path route-path}))
 
-   :clj  (defn construct [http-adapter-fn user-id-fn http-request-user-id-fn]
+   :clj  (defn construct [http-adapter-fn http-request-user-id-fn]
            (map->WebsocketBridge {:http-adapter-fn         http-adapter-fn
-                                  :user-id-fn              user-id-fn
                                   :http-request-user-id-fn http-request-user-id-fn})))
 
 
@@ -45,22 +44,29 @@
                                                   :cljs {:type :auto}))
         tx (a/chan)
         rx (a/chan)]
+
     (go-loop [msg (a/<! tx)]
-      ;;; local --ws-> remote
+      ;;; sending (local --ws-> remote)
       (when-not (nil? msg)
         #_(println "WS TX" msg)
-        #?(:clj  (let [user-id-fn (:user-id-fn this)
-                       user-id    (user-id-fn msg)]
-                   (send-fn user-id [:websocket/event {:msg msg}]))
+        #?(:clj  (if-let [user-id (some-> msg meta ::user-id)]
+                   (send-fn user-id [:websocket/event {:msg msg}])
+                   (println "WARNING: discarding outbound ws message due to missing user-id"))
            :cljs (send-fn [:websocket/event {:msg msg}]))
         (recur (a/<! tx))))
-    (go-loop [msg (a/<! ch-recv)]
-      ;;; remote --ws-> local
-      (when-not (nil? msg)
-        #_(println "WS RX" msg)
-        (when-let [msg (some-> msg :event second :msg)]
-          (a/>! rx msg))
+
+    (go-loop [ws-msg (a/<! ch-recv)]
+      ;;; receiving (remote --ws-> local)
+      (when-not (nil? ws-msg)
+        #_(println "WS RX" ws-msg)
+        (when-let [msg (some-> ws-msg :event second :msg)]
+          (let [msg #?(:clj  (with-meta msg
+                               (assoc (meta msg)
+                                      ::user-id (some-> ws-msg :uid)))
+                       :cljs msg)]
+            (a/>! rx msg)))
         (recur (a/<! ch-recv))))
+
     (assoc this
            :ws-data ws-data
            :mix     (a/mix tx)
