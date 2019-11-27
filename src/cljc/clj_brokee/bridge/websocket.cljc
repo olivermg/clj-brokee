@@ -46,18 +46,20 @@
         tx (a/chan)
         rx (a/chan)]
     (go-loop [msg (a/<! tx)]
+      ;;; local --ws-> remote
       (when-not (nil? msg)
         #_(println "WS TX" msg)
         #?(:clj  (let [user-id-fn (:user-id-fn this)
                        user-id    (user-id-fn msg)]
-                   (send-fn user-id [:websocket/event {:data msg}]))
-           :cljs (send-fn [:websocket/event {:data msg}]))
+                   (send-fn user-id [:websocket/event {:msg msg}]))
+           :cljs (send-fn [:websocket/event {:msg msg}]))
         (recur (a/<! tx))))
     (go-loop [msg (a/<! ch-recv)]
+      ;;; remote --ws-> local
       (when-not (nil? msg)
         #_(println "WS RX" msg)
-        (when-let [data (some-> msg :event second :data)]
-          (a/>! rx data))
+        (when-let [msg (some-> msg :event second :msg)]
+          (a/>! rx msg))
         (recur (a/<! ch-recv))))
     (assoc this
            :ws-data ws-data
