@@ -33,7 +33,8 @@
 ;;;    producers                                           consumers
 
 
-(defrecord Broker [client-mix cbch bridge-mult bbch bridge-mix bcch client-pub]
+(defrecord Broker [topic-fn
+                   client-mix cbch bridge-mult bbch bridge-mix bcch client-pub]
 
   b/Bridge
 
@@ -47,17 +48,17 @@
       (a/tap bridge-mult ch)
       ch)))
 
-(defn construct []
-  (map->Broker {}))
+(defn construct [topic-fn]
+  (map->Broker {:topic-fn topic-fn}))
 
-(defn start [this]
+(defn start [{:keys [topic-fn] :as this}]
   (let [cbch         (a/chan)
         bbch         (a/chan)
         bcch         (a/chan)
         client-mix   (a/mix cbch)
         bridge-mult  (a/mult cbch)
         bridge-mix   (a/mix bcch)
-        client-pub   (a/pub bcch :topic)]
+        client-pub   (a/pub bcch topic-fn)]
     (a/tap bridge-mult bbch)
     (a/admix bridge-mix bbch)
     (assoc this

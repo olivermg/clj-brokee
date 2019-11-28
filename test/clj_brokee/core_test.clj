@@ -7,14 +7,16 @@
             [clj-brokee.producer :as p]
             [clj-brokee.consumer :as c]))
 
-(def message1 {:foo "foo"
-               :bar 123
-               :baz [{:a 1.23}
-                     {:b #{:x :y :z}}]})
-(def message2 {:foo "foo2"
-               :bar 1234
-               :baz [{:a 1.234}
-                     {:b #{:x :y :z}}]})
+(def message1 {:topic :topic1
+               :foo   "foo"
+               :bar   123
+               :baz   [{:a 1.23}
+                       {:b #{:x :y :z}}]})
+(def message2 {:topic :topic1
+               :foo   "foo2"
+               :bar   1234
+               :baz   [{:a 1.234}
+                       {:b #{:x :y :z}}]})
 
 (defn wait-for-channel [ch & {:keys [timeout]
                               :or   {timeout 2000}}]
@@ -22,16 +24,15 @@
           first))
 
 (deftest via-broker
-  (let [topic    :topic1
-        broker   (-> (b/construct)
+  (let [broker   (-> (b/construct :topic)
                      (b/start))
         producer (b/producer broker)
-        consumer (b/consumer broker topic)]
+        consumer (b/consumer broker :topic1)]
     (testing "send & receive message via broker"
       (future
         (Thread/sleep 100)
-        (go (p/produce producer topic message1)
-            (p/produce producer topic message2)))
+        (go (p/produce producer message1)
+            (p/produce producer message2)))
       (is (= {:message message1
               :context {:consumed message1}}
              (wait-for-channel
@@ -48,22 +49,21 @@
     (b/stop broker)))
 
 (deftest via-hub
-  (let [topic    :topic1
-        broker1  (-> (b/construct)
+  (let [broker1  (-> (b/construct :topic)
                      (b/start))
-        broker2  (-> (b/construct)
+        broker2  (-> (b/construct :topic)
                      (b/start))
         hub      (-> (h/construct)
                      (h/start)
                      (h/connect broker1)
                      (h/connect broker2))
         producer (b/producer broker1)
-        consumer (b/consumer broker2 topic)]
+        consumer (b/consumer broker2 :topic1)]
     (testing "send & receive message brokers & hub"
       (future
         (Thread/sleep 100)
-        (go (p/produce producer topic message1)
-            (p/produce producer topic message2)))
+        (go (p/produce producer message1)
+            (p/produce producer message2)))
       (is (= {:message message1
               :context {:consumed message1}}
              (wait-for-channel

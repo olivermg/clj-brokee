@@ -10,8 +10,7 @@
   "Consumes message asynchronously. Must be used within the context
 of a go block."
   [this]
-  `(let [ch-msg# (a/<! (:msg-ch ~this))]
-     (:message ch-msg#)))
+  `(a/<! (:msg-ch ~this)))
 
 #_(macroexpand-1 '(consume {:msg-ch (a/chan)}))
 
@@ -33,11 +32,8 @@ been produced within the context of the consumed message.
 So a common pattern for responding to a consumed message is:
 
 (c/with-consumed consumer msg
-  (p/produce producer :response-topic
-             {:x (some-> msg :x inc)}))
-
-assuming that the consumer on the other end is expecting answers to
-be produced under the topic :response-topic."
+  (p/produce producer
+             {:x (some-> msg :x inc)}))"
   [this msg-sym & body]
   `(go (let [~msg-sym (consume ~this)]
          (binding [*current-context* (assoc *current-context*
