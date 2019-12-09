@@ -9,10 +9,12 @@
                             :hub2 hub2}))
 
 (defn start [{:keys [id hub1 hub2] :as this}]
-  (h/listen-raw hub1 #(when-not (= (some-> % ::id) id)
-                        (h/emit-raw hub2 (assoc % ::id id))))
-  (h/listen-raw hub2 #(when-not (= (some-> % ::id) id)
-                        (h/emit-raw hub1 (assoc % ::id id))))
+  (h/listen hub1 #(when-not (= (some-> % :meta ::id) id)
+                    (h/emit hub2 (assoc-in % [:meta ::id] id)))
+            :raw? true)
+  (h/listen hub2 #(when-not (= (some-> % :meta ::id) id)
+                    (h/emit hub1 (assoc-in % [:meta ::id] id)))
+            :raw? true)
   this)
 
 (defn stop [this]
