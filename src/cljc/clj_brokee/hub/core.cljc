@@ -5,7 +5,7 @@
 (defn construct []
   (map->Hub {:listeners (atom [])}))
 
-(defn emit [{:keys [listeners] :as this} message]
+(defn emit-raw [{:keys [listeners] :as this} message]
   (dorun (map (fn [{:keys [handler] :as listener}]
                 (try
                   (handler message)
@@ -13,5 +13,11 @@
                     (println "WARNING: handler threw error" e))))
               @listeners)))
 
+(defn emit [this message]
+  (emit-raw this {:message message}))
+
+(defn listen-raw [{:keys [listeners] :as this} handler]
+  (swap! listeners conj {:handler handler}))
+
 (defn listen [this handler]
-  (update this :listeners swap! #(conj % {:handler handler})))
+  (listen-raw this #(handler (some-> % :message))))
