@@ -1,22 +1,19 @@
 (ns clj-brokee.hub.transport.direct
-  (:require [clj-brokee.hub.core :as h]))
+  (:require [clj-brokee.hub.core :as h]
+            [clj-brokee.hub.transport :as t]))
 
-(defrecord DirectHubTransport [id hub1 hub2])
+(defn construct [hub hub2]
+  (-> (t/construct hub #(h/emit hub2 %))
+      (assoc :hub2 hub2)))
 
-(defn construct [hub1 hub2]
-  (map->DirectHubTransport {:id   (rand-int 2000000000)
-                            :hub1 hub1
-                            :hub2 hub2}))
-
-(defn start [{:keys [id hub1 hub2] :as this}]
-  (h/listen hub1 #(when-not (= (some-> % :meta ::id) id)
-                    (h/emit hub2 (assoc-in % [:meta ::id] id)))
+(defn start [{:keys [id hub hub2] :as this}]
+  (h/listen hub2 #(when-not (= (some-> % :meta :transport/id) id)
+                    (h/emit hub (assoc-in % [:meta :transport/id] id)))
             :raw? true)
-  (h/listen hub2 #(when-not (= (some-> % :meta ::id) id)
-                    (h/emit hub1 (assoc-in % [:meta ::id] id)))
-            :raw? true)
-  this)
+  (-> this
+      (t/start)))
 
 (defn stop [this]
   ;;; TODO: implement
-  this)
+  (-> this
+      (t/stop)))
