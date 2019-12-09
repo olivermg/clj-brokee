@@ -7,17 +7,20 @@
 (defn construct []
   (map->Hub {:listeners (atom [])}))
 
-(defn emit [{:keys [listeners] :as this} message]
-  (let [message (if-not (instance? Message message)
-                  (map->Message {:meta {}
-                                 :data message})
-                  message)]
-    (dorun (map (fn [{:keys [handler] :as listener}]
-                  (try
-                    (handler message)
-                    (catch #?(:clj Throwable :cljs :default) e
-                      (println "WARNING: handler threw error" e))))
-                @listeners))))
+(let [pmap #?(:clj  pmap
+              :cljs map)]
+  (defn emit [{:keys [listeners] :as this} message]
+    (let [message (if-not (instance? Message message)
+                    (map->Message {:meta {}
+                                   :data message})
+                    message)]
+      (dorun
+       (pmap (fn [{:keys [handler] :as listener}]
+               (try
+                 (handler message)
+                 (catch #?(:clj Throwable :cljs :default) e
+                   (println "WARNING: handler threw error" e))))
+             @listeners)))))
 
 (defn listen [{:keys [listeners] :as this} handler & {:keys [raw?]}]
   (let [handler (if-not raw?
