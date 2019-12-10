@@ -1,27 +1,30 @@
 (ns clj-brokee.core-test
   (:require [clojure.test :refer :all]
             [clj-brokee.hub.core :as h]
-            [clj-brokee.hub.transport.direct :as td]))
+            #_[clj-brokee.hub.transport.direct :as td]))
 
 (deftest hub
   (let [h  (h/construct)
         a1 (atom [])
         a2 (atom [])
         a3 (atom [])
-        c1 (h/plug-in h (fn [msg]
-                          (swap! a1 conj msg)))
-        c2 (h/plug-in h (fn [msg]
-                          (swap! a2 conj msg)))
-        c3 (h/plug-in h (fn [msg]
-                          (swap! a3 conj msg)))]
-    (h/emit c1 :x)
-    (h/emit c2 :y)
-    (h/emit c3 :z)
+        c1 (h/construct-client (fn [msg]
+                                 (swap! a1 conj msg)))
+        c2 (h/construct-client (fn [msg]
+                                 (swap! a2 conj msg)))
+        c3 (h/construct-client (fn [msg]
+                                 (swap! a3 conj msg)))]
+    (h/connect h c1)
+    (h/connect h c2)
+    (h/connect h c3)
+    (h/publish c1 :x)
+    (h/publish c2 :y)
+    (h/publish c3 :z)
     (is (= [:y :z] @a1))
     (is (= [:x :z] @a2))
     (is (= [:x :y] @a3))))
 
-(deftest direct-transport
+#_(deftest direct-transport
   (let [h1  (h/construct)
         h2  (h/construct)
         t   (-> (td/construct h1 h2)
