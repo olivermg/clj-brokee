@@ -1,29 +1,39 @@
 (ns clj-brokee.hub.core)
 
-(defrecord Hub [listeners])
+(defrecord Hub [clients])
 
-(defrecord Message [meta data])
+(defrecord Client [id hub handler])
 
 (defn construct []
-  (map->Hub {:listeners (atom [])}))
+  (map->Hub {:clients (atom {})}))
 
 (let [pmap #?(:clj  pmap
               :cljs map)]
-  (defn emit [{:keys [listeners] :as this} message]
-    (let [message (if-not (instance? Message message)
-                    (map->Message {:meta {}
-                                   :data message})
-                    message)]
+  (defn emit* [{:keys [clients] :as this} client-id message]
+    (let [other-clients (-> @clients
+                            (dissoc client-id)
+                            vals)]
       (dorun
-       (pmap (fn [{:keys [handler] :as listener}]
+       (pmap (fn [{:keys [handler] :as client}]
                (try
                  (handler message)
                  (catch #?(:clj Throwable :cljs :default) e
                    (println "WARNING: handler threw error" e))))
-             @listeners)))))
+             other-clients)))
+    nil))
 
-(defn listen [{:keys [listeners] :as this} handler & {:keys [raw?]}]
-  (let [handler (if-not raw?
-                  #(handler (some-> % :data))
-                  #(handler %))]
-    (swap! listeners conj {:handler handler})))
+(defn plug-in [{:keys [clients] :as this} handler]
+  (let [client-id (rand-int 2000000000)
+        client    (map->Client {:id      client-id
+                                :hub     this
+                                :handler handler})]
+    (swap! clients assoc client-id client)
+    client))
+
+(defn plug-out [{:keys [clients] :as this} {:keys [id] :as client}]
+  (swap! clients dissoc id)
+  this)
+
+
+(defn emit [{:keys [id hub] :as this} message]
+  (emit* hub id message))
