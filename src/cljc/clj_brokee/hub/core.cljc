@@ -1,39 +1,62 @@
 (ns clj-brokee.hub.core)
 
-(defrecord Hub [clients])
+(def pmap* #?(:clj  pmap
+              :cljs map))
 
-(defrecord Client [id hub handler])
+(defprotocol Broker
+  (connect [this client])
+  (emit [this client message]))
 
-(defn construct []
-  (map->Hub {:clients (atom {})}))
+(defprotocol Client
+  (id [this])
+  (set-broker [this broker])
+  (publish [this message])
+  (deliver [this message]))
 
-(let [pmap #?(:clj  pmap
-              :cljs map)]
-  (defn emit* [{:keys [clients] :as this} client-id message]
+
+(defrecord HubBroker [clients]
+
+  Broker
+
+  (connect [this client]
+    (swap! clients assoc (id client) client)
+    (set-broker client this)
+    nil)
+
+  (emit [this client message]
     (let [other-clients (-> @clients
-                            (dissoc client-id)
+                            (dissoc (id client))
                             vals)]
       (dorun
-       (pmap (fn [{:keys [handler] :as client}]
-               (try
-                 (handler message)
-                 (catch #?(:clj Throwable :cljs :default) e
-                   (println "WARNING: handler threw error" e))))
-             other-clients)))
-    nil))
+       (pmap* (fn [client]
+                (try
+                  (deliver client message)
+                  (catch #?(:clj Throwable :cljs :default) e
+                    (println "WARNING: client threw error on deliver" e))))
+              other-clients)))))
 
-(defn plug-in [{:keys [clients] :as this} handler]
-  (let [client-id (rand-int 2000000000)
-        client    (map->Client {:id      client-id
-                                :hub     this
-                                :handler handler})]
-    (swap! clients assoc client-id client)
-    client))
-
-(defn plug-out [{:keys [clients] :as this} {:keys [id] :as client}]
-  (swap! clients dissoc id)
-  this)
+(defn construct []
+  (map->HubBroker {:clients (atom {})}))
 
 
-(defn emit [{:keys [id hub] :as this} message]
-  (emit* hub id message))
+(defrecord HandlerClient [id handler
+                          broker]
+
+  Client
+
+  (id [this]
+    id)
+
+  (set-broker [this broker]
+    (reset! (:broker this) broker))
+
+  (publish [this message]
+    (emit @broker this message))
+
+  (deliver [this message]
+    (handler message)))
+
+(defn construct-client [handler]
+  (map->HandlerClient {:id      (rand-int 2000000000)
+                       :handler handler
+                       :broker  (atom nil)}))
