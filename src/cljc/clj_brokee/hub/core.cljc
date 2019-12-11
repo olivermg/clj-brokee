@@ -4,24 +4,31 @@
               :cljs map))
 
 (defprotocol Broker
-  (connect [this client])
+  (connected! [this client])
   (emit [this client message]))
 
 (defprotocol Client
   (id [this])
-  (set-broker [this broker])
-  (publish [this message])
-  (deliver [this message]))
+  (connect-to-broker! [this broker])
+  (handle-outgoing [this message])
+  (handle-incoming [this message]))
+
+(defn publish [this message]
+  (handle-outgoing this message))
+
+(defn connect! [this broker]
+  (let [this (connect-to-broker! this broker)]
+    (connected! broker this)
+    this))
 
 
 (defrecord HubBroker [clients]
 
   Broker
 
-  (connect [this client]
+  (connected! [this client]
     (swap! clients assoc (id client) client)
-    (set-broker client this)
-    nil)
+    this)
 
   (emit [this client message]
     (let [other-clients (-> @clients
@@ -30,7 +37,7 @@
       (dorun
        (pmap* (fn [client]
                 (try
-                  (deliver client message)
+                  (handle-incoming client message)
                   (catch #?(:clj Throwable :cljs :default) e
                     (println "WARNING: client threw error on deliver" e))))
               other-clients)))))
@@ -47,13 +54,14 @@
   (id [this]
     id)
 
-  (set-broker [this broker]
-    (reset! (:broker this) broker))
+  (connect-to-broker! [this broker]
+    (reset! (:broker this) broker)
+    this)
 
-  (publish [this message]
+  (handle-outgoing [this message]
     (emit @broker this message))
 
-  (deliver [this message]
+  (handle-incoming [this message]
     (handler message)))
 
 (defn construct-client [handler]

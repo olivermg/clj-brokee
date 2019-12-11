@@ -1,6 +1,10 @@
 (ns clj-brokee.hub.transport
   (:require [clj-brokee.hub.core :as h]))
 
+(defprotocol Transport
+  (inject [this broker]))
+
+
 (defrecord HubTransport [hub handler
                          client])
 
@@ -9,7 +13,7 @@
                       :handler handler}))
 
 (defn start [{:keys [hub handler] :as this}]
-  (assoc this :client (h/plug-in hub handler))
+  #_(assoc this :client (h/plug-in hub handler))
   #_(h/listen hub #(when-not (= (some-> % :meta :transport/id) id)
                    (handler (assoc-in % [:meta :transport/id] id))
                    #_(h/emit hub2 (assoc-in % [:meta :transport/id] id)))
