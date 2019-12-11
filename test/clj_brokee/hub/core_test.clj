@@ -1,22 +1,19 @@
 (ns clj-brokee.core-test
   (:require [clojure.test :refer :all]
             [clj-brokee.hub.core :as h]
-            #_[clj-brokee.hub.transport.direct :as td]))
+            [clj-brokee.hub.transport.direct :as td]))
 
 (deftest hub
   (let [h  (h/construct)
         a1 (atom [])
         a2 (atom [])
         a3 (atom [])
-        c1 (h/construct-client (fn [msg]
-                                 (swap! a1 conj msg)))
-        c2 (h/construct-client (fn [msg]
-                                 (swap! a2 conj msg)))
-        c3 (h/construct-client (fn [msg]
-                                 (swap! a3 conj msg)))]
-    (h/connect h c1)
-    (h/connect h c2)
-    (h/connect h c3)
+        c1 (-> (h/construct-client #(swap! a1 conj %))
+               (h/connect! h))
+        c2 (-> (h/construct-client #(swap! a2 conj %))
+               (h/connect! h))
+        c3 (-> (h/construct-client #(swap! a3 conj %))
+               (h/connect! h))]
     (h/publish c1 :x)
     (h/publish c2 :y)
     (h/publish c3 :z)
@@ -24,7 +21,7 @@
     (is (= [:x :z] @a2))
     (is (= [:x :y] @a3))))
 
-#_(deftest direct-transport
+(deftest direct-transport
   (let [h1  (h/construct)
         h2  (h/construct)
         t   (-> (td/construct h1 h2)
@@ -35,24 +32,24 @@
         a21 (atom [])
         a22 (atom [])
         a23 (atom [])
-        c11 (h/plug-in h1 (fn [msg]
-                            (swap! a11 conj msg)))
-        c12 (h/plug-in h1 (fn [msg]
-                            (swap! a12 conj msg)))
-        c13 (h/plug-in h1 (fn [msg]
-                            (swap! a13 conj msg)))
-        c21 (h/plug-in h2 (fn [msg]
-                            (swap! a21 conj msg)))
-        c22 (h/plug-in h2 (fn [msg]
-                            (swap! a22 conj msg)))
-        c23 (h/plug-in h2 (fn [msg]
-                            (swap! a23 conj msg)))]
-    (h/emit c11 :c11)
-    (h/emit c12 :c12)
-    (h/emit c13 :c13)
-    (h/emit c21 :c21)
-    (h/emit c22 :c22)
-    (h/emit c23 :c23)
+        c11 (-> (h/construct-client #(swap! a11 conj %))
+                (h/connect! h1))
+        c12 (-> (h/construct-client #(swap! a12 conj %))
+                (h/connect! h1))
+        c13 (-> (h/construct-client #(swap! a13 conj %))
+                (h/connect! h1))
+        c21 (-> (h/construct-client #(swap! a21 conj %))
+                (h/connect! h2))
+        c22 (-> (h/construct-client #(swap! a22 conj %))
+                (h/connect! h2))
+        c23 (-> (h/construct-client #(swap! a23 conj %))
+                (h/connect! h2))]
+    (h/publish c11 :c11)
+    (h/publish c12 :c12)
+    (h/publish c13 :c13)
+    (h/publish c21 :c21)
+    (h/publish c22 :c22)
+    (h/publish c23 :c23)
     (is (= [:c12 :c13 :c21 :c22 :c23] @a11))
     (is (= [:c11 :c13 :c21 :c22 :c23] @a12))
     (is (= [:c11 :c12 :c21 :c22 :c23] @a13))
