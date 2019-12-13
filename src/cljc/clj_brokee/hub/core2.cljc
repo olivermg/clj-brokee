@@ -28,6 +28,9 @@
 ;;;         +  v                    v  +
 ;;;         User                    User
 
+
+;;; broker implementation
+
 (defn make-broker []
   {:deliver-fns (atom {})})
 
@@ -38,6 +41,8 @@
         (-> (dissoc @deliver-fns client-id)
             vals))))
 
+
+;;; client implementation
 
 (defn make-client [deliver-fn]
   (let [id (rand-int 2000000000)]
@@ -52,6 +57,8 @@
   (emit-fn message))
 
 
+;;; connecting broker & client
+
 (defn connect! [{:keys [id deliver-fn] :as client} {:keys [deliver-fns] :as broker}]
   (swap! deliver-fns assoc id deliver-fn)
   (assoc client :emit-fn
@@ -59,10 +66,17 @@
            (emit broker id message))))
 
 
+;;; specific client implementations
+
+(defn make-async-client [ch]
+  (make-client (fn [message]
+                 (println "DELIVER VIA ASYNC" message ch))))
+
+
 #_(let [b  (make-broker)
         c1 (-> (make-client #(println "CLIENT1" %))
                (connect! b))
-        c2 (-> (make-client #(println "CLIENT2" %))
+        c2 (-> (make-async-client :ch2)
                (connect! b))
         c3 (-> (make-client #(println "CLIENT3" %))
                (connect! b))]
