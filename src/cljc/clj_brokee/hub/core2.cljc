@@ -1,4 +1,5 @@
-(ns clj-brokee.hub.core2)
+(ns clj-brokee.hub.core2
+  (:require [clj-brokee.util :as u]))
 
 ;;;               +--------------+
 ;;;               |              |
@@ -36,7 +37,7 @@
 
 (defn emit [{:keys [deliver-logic clients] :as broker} client-id message]
   (dorun
-   (map #(deliver-logic % message)
+   (map #(u/run-async deliver-logic % message)
         (-> (dissoc @clients client-id)
             vals))))
 
