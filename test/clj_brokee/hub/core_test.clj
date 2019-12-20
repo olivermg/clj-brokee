@@ -1,4 +1,4 @@
-(ns clj-brokee.core-test
+(ns clj-brokee.hub.core-test
   (:require [clojure.test :refer :all]
             [clj-brokee.hub.core :as h]
             [clj-brokee.hub.transport.direct :as td]))
