@@ -9,7 +9,7 @@
   b/Broker
 
   (producer [this]
-    (p/map->SimpleProducer this))
+    (p/map->SimpleProducer {:broker this}))
 
   (consumer [this]
     (let [consumer (c/map->SimpleConsumer {:subscriptions (atom {})})]
@@ -19,3 +19,13 @@
 
 (defn make-simple-broker []
   (map->SimpleBroker {:consumers (atom [])}))
+
+
+
+#_(let [b  (make-simple-broker)
+        c1 (b/consumer b)
+        c2 (b/consumer b)
+        p1 (b/producer b)
+        p2 (b/producer b)]
+    (clj-brokee.consumer/subscribe c1 #{:t1} #(println "T1" %1 %2))
+    (clj-brokee.producer/produce p1 :t1 {:foo "bar"}))
