@@ -1,20 +1,21 @@
 (ns clj-brokee.broker.simple
   (:require [clj-brokee.broker :as b]
-            [clj-brokee.util :as u]))
+            [clj-brokee.consumer.simple :as c]
+            [clj-brokee.producer.simple :as p]))
 
 
-(defrecord SimpleBroker [topic-consumer-map]
+(defrecord SimpleBroker [consumers]
 
   b/Broker
 
-  (produce [this topic message]
-    (doseq [handle-fn (get topic-consumer-map topic)]
-      (u/run-async handle-fn topic message)))
+  (producer [this]
+    (p/map->SimpleProducer this))
 
-  (consume [this topic handle-fn]
-    (swap! topic-consumer-map #(update % topic conj handle-fn))
-    this))
+  (consumer [this]
+    (let [consumer (c/map->SimpleConsumer {:subscriptions (atom {})})]
+      (swap! consumers #(conj % consumer))
+      consumer)))
 
 
 (defn make-simple-broker []
-  (map->SimpleBroker {:topic-consumer-map (atom {})}))
+  (map->SimpleBroker {:consumers (atom [])}))
