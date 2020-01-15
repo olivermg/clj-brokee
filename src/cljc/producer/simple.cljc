@@ -8,6 +8,6 @@
   p/Producer
 
   (produce [this topic message]
-    (doseq [consumer (get broker :consumers)]
-      (doseq [handle-fn (get-in consumer [:subscriptions topic])]
+    (doseq [consumer (some-> broker :consumers deref)]
+      (doseq [handle-fn (some-> consumer :subscriptions deref (get topic))]
         (u/run-async handle-fn topic message)))))
