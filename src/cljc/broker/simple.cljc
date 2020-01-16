@@ -28,4 +28,7 @@
         p1 (b/producer b)
         p2 (b/producer b)]
     (clj-brokee.consumer/subscribe c1 #{:t1} #(println "T1" %1 %2))
-    (clj-brokee.producer/produce p1 :t1 {:foo "bar"}))
+    (clj-brokee.consumer/subscribe c2 #{:t2 :t3} #(println "T2/3" %1 %2))
+    (clj-brokee.producer/produce p1 :t1 {:foo "bar1"})
+    (clj-brokee.producer/produce p1 :t2 {:foo "bar2"})
+    (clj-brokee.producer/produce p1 :t3 {:foo "bar3"}))
