@@ -30,5 +30,7 @@
     (clj-brokee.consumer/subscribe c1 #{:t1} #(println "T1" %1 %2))
     (clj-brokee.consumer/subscribe c2 #{:t2 :t3} #(println "T2/3" %1 %2))
     (clj-brokee.producer/produce p1 :t1 {:foo "bar1"})
+    (Thread/sleep 100)
     (clj-brokee.producer/produce p1 :t2 {:foo "bar2"})
-    (clj-brokee.producer/produce p1 :t3 {:foo "bar3"}))
+    (Thread/sleep 100)
+    (clj-brokee.producer/produce p2 :t3 {:foo "bar3"}))

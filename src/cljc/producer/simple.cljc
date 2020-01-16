@@ -10,4 +10,5 @@
   (produce [this topic message]
     (doseq [consumer (some-> broker :consumers deref)]
       (doseq [handle-fn (some-> consumer :subscriptions deref (get topic))]
-        (u/run-async handle-fn topic message)))))
+        (u/run-async handle-fn topic message)))
+    nil))
